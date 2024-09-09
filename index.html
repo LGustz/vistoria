@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plataforma de Chamadas</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        #container {
+            text-align: center;
+        }
+        video {
+            width: 45%;
+            border: 1px solid black;
+            margin: 10px;
+        }
+        button {
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <video id="localVideo" autoplay muted></video>
+        <video id="remoteVideo" autoplay></video>
+        <button id="startCall">Iniciar Chamada</button>
+        <button id="endCall" disabled>Encerrar Chamada</button>
+        <input type="text" id="peerId" placeholder="Digite o ID do peer para conectar">
+        <button id="connectPeer">Conectar</button>
+    </div>
+    <script>
+        const localVideo = document.getElementById('localVideo');
+        const remoteVideo = document.getElementById('remoteVideo');
+        const startCallButton = document.getElementById('startCall');
+        const endCallButton = document.getElementById('endCall');
+        const connectPeerButton = document.getElementById('connectPeer');
+        const peerIdInput = document.getElementById('peerId');
+
+        // Cria uma nova instância do PeerJS
+        const peer = new Peer(undefined, {
+    host: 'peerjs-server.herokuapp.com',
+    port: 443,
+    secure: true
+});
+
+peer.on('open', id => {
+    console.log('ID do Peer:', id); // Mostra o ID do Peer no console
+    document.getElementById('peerId').value = id; // Preenche o campo com o ID do Peer
+});
+
+
+        let localStream;
+        let currentCall;
+
+        // Obtém o stream de vídeo local
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+            .then(stream => {
+                localStream = stream;
+                localVideo.srcObject = stream;
+            })
+            .catch(err => console.error('Erro ao acessar a mídia:', err));
+
+        // Quando um novo cliente se conecta, aceita a chamada automaticamente
+        peer.on('call', call => {
+            console.log('Recebendo chamada...');
+            call.answer(localStream); // Responde a chamada com o stream local
+            call.on('stream', remoteStream => {
+                remoteVideo.srcObject = remoteStream;
+            });
+            currentCall = call;
+        });
+
+        connectPeerButton.addEventListener('click', () => {
+            const peerId = peerIdInput.value;
+            if (peerId) {
+                console.log('Conectando ao peer:', peerId);
+                const call = peer.call(peerId, localStream); // Faz a chamada para o peer especificado
+                call.on('stream', remoteStream => {
+                    remoteVideo.srcObject = remoteStream;
+                });
+                currentCall = call;
+                startCallButton.disabled = true;
+                endCallButton.disabled = false;
+            }
+        });
+
+        startCallButton.addEventListener('click', () => {
+            const peerId = peerIdInput.value;
+            if (peerId) {
+                console.log('Iniciando chamada para:', peerId);
+                const call = peer.call(peerId, localStream); // Faz a chamada para o peer especificado
+                call.on('stream', remoteStream => {
+                    remoteVideo.srcObject = remoteStream;
+                });
+                currentCall = call;
+                startCallButton.disabled = true;
+                endCallButton.disabled = false;
+            }
+        });
+
+        endCallButton.addEventListener('click', () => {
+            if (currentCall) {
+                console.log('Encerrando chamada...');
+                currentCall.close(); // Encerra a chamada atual
+                startCallButton.disabled = false;
+                endCallButton.disabled = true;
+                remoteVideo.srcObject = null;
+            }
+        });
+
+    </script>
+</body>
+</html>

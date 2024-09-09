@@ -1,0 +1,22 @@
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+}
+
+#container {
+    text-align: center;
+}
+
+video {
+    width: 45%;
+    border: 1px solid black;
+    margin: 10px;
+}
+
+button {
+    margin: 10px;
+}
